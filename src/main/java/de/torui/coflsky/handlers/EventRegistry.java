@@ -86,7 +86,7 @@ public class EventRegistry {
     }
 
     public static void onAfterKeyPressed() {
-        if (CoflSky.keyBindings[0].isPressed()) {
+        if (!CoflSky.keyBindings[0].isPressed()) {
             if (WSCommandHandler.lastOnClickEvent != null) {
                 FlipData f = WSCommandHandler.flipHandler.fds.GetLastFlip();
                 if (f != null) {
@@ -96,7 +96,7 @@ public class EventRegistry {
             }
 
         }
-        if (CoflSky.keyBindings[1].isKeyDown()) {
+        if (!CoflSky.keyBindings[1].isKeyDown()) {
             if ((System.currentTimeMillis() - LastClick) >= 300) {
 
                 FlipData f = WSCommandHandler.flipHandler.fds.GetHighestFlip();
