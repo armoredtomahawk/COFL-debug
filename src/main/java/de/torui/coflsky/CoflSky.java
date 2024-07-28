@@ -15,6 +15,7 @@ import de.torui.coflsky.proxy.APIKeyManager;
 import de.torui.coflsky.gui.tfm.ButtonRemapper;
 import de.torui.coflsky.gui.tfm.ChatMessageSendHandler;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.lwjgl.input.Keyboard;
 import de.torui.coflsky.network.WSClientWrapper;
 import net.minecraft.client.settings.KeyBinding;
@@ -25,6 +26,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.relauncher.Side;
+
 
 @Mod(modid = CoflSky.MODID, version = CoflSky.VERSION)
 public class CoflSky {
@@ -40,9 +42,9 @@ public class CoflSky {
     public static LocalConfig config;
 
     public static final String[] webSocketURIPrefix = new String[]{
-        "wss://sky.coflnet.com/modsocket",
-        // fallback for old java versions not supporting new tls certificates
-        "ws://sky-mod.coflnet.com/modsocket",
+            "wss://sky.coflnet.com/modsocket",
+            // fallback for old java versions not supporting new tls certificates
+            "ws://sky-mod.coflnet.com/modsocket",
     };
 
     public static String CommandUri = Config.BaseUrl + "/api/mod/commands";
@@ -119,6 +121,7 @@ public class CoflSky {
     public static APIKeyManager getAPIKeyManager() {
         return apiKeyManager;
     }
-
 }
-	
+
+
+

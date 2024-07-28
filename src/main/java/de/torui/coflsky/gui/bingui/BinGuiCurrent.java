@@ -1,11 +1,13 @@
 package de.torui.coflsky.gui.bingui;
 
-
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import de.torui.coflsky.CoflSky;
 import de.torui.coflsky.gui.GUIType;
 import de.torui.coflsky.gui.bingui.helper.ColorPallet;
 import de.torui.coflsky.gui.bingui.helper.RenderUtils;
 import de.torui.coflsky.handlers.EventHandler;
+import de.torui.coflsky.handlers.EventRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiChest;
@@ -36,6 +38,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BinGuiCurrent extends GuiChest {
+    private long lastClickTime = 0;
+    private static final long MIN_DELAY = 89; // minimum delay in milliseconds
+    private static final long MAX_DELAY = 150; // maximum delay in milliseconds
+    private long currentDelay = 0;
+    private final Random random = new Random();
     private String message;
     private String[] lore;
     private ItemStack itemStack;
@@ -240,16 +247,21 @@ public class BinGuiCurrent extends GuiChest {
                 RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 + 20, 60, 5, RenderUtils.setAlpha(ColorPallet.WHITE.getColor(), 50));
                 RenderUtils.drawString(buyText, screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 + 5 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5 + 5, ColorPallet.WHITE.getColor(), 40);
             }
-            if (isClicked() && buyer == null) {
-                if (buyState == BuyState.INIT) {
-                    //play a sound
-                    mc.thePlayer.playSound("random.click", 1, 1);
-                    buyText = "Click again to confirm";
-                    buyState = BuyState.PURCHASE;
-                } else if (buyState == BuyState.CONFIRM) {
-                    mc.thePlayer.playSound("random.click", 1, 1);
-                    buyText = "Buying";
-                    buyState = BuyState.BUYING;
+            if (EventRegistry.toggle && buyer == null) {
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - lastClickTime > currentDelay) {
+                    if (buyState == BuyState.INIT) {
+                        // play a sound
+                        mc.thePlayer.playSound("random.click", 1, 1);
+                        //buyText = "Click again to confirm";
+                        //buyState = BuyState.PURCHASE;
+                    } else if (buyState == BuyState.CONFIRM) {
+                        mc.thePlayer.playSound("random.click", 1, 1);
+                        //buyText = "Buying";
+                        //buyState = BuyState.BUYING;
+                    }
+                    lastClickTime = currentTime;
+                    currentDelay = MIN_DELAY + random.nextInt((int) (MAX_DELAY - MIN_DELAY));
                 }
             }
         }

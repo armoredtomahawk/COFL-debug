@@ -24,6 +24,7 @@ import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
@@ -50,7 +51,7 @@ public class EventRegistry {
     public static Pattern chatpattern = Pattern.compile("a^", Pattern.CASE_INSENSITIVE);
     public final ExecutorService chatThreadPool = Executors.newFixedThreadPool(2);
     public final ExecutorService tickThreadPool = Executors.newFixedThreadPool(2);
-
+    public static boolean toggle = false;
     @SubscribeEvent
     public void onDisconnectedFromServerEvent(ClientDisconnectionFromServerEvent event) {
         if (CoflSky.Wrapper.isRunning) {
@@ -86,18 +87,22 @@ public class EventRegistry {
     }
 
     public static void onAfterKeyPressed() {
-        if (!CoflSky.keyBindings[0].isPressed()) {
-            if (WSCommandHandler.lastOnClickEvent != null) {
-                FlipData f = WSCommandHandler.flipHandler.fds.GetLastFlip();
-                if (f != null) {
-                    WSCommandHandler.Execute("/cofl openauctiongui " + f.Id + " false",
-                            Minecraft.getMinecraft().thePlayer);
-                }
+        if (CoflSky.keyBindings[1].isPressed()) {
+            //if (WSCommandHandler.lastOnClickEvent != null) {
+                //FlipData f = WSCommandHandler.flipHandler.fds.GetLastFlip();
+                //if (f != null) {
+                    //WSCommandHandler.Execute("/cofl openauctiongui " + f.Id + " false",
+                            //Minecraft.getMinecraft().thePlayer);
+                //}
+            //}
+            if (toggle) {
+                toggle = false;Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("Auto Flipper Off"));
             }
-
+            else {toggle = true;
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("Auto Flipper On"));}
         }
-        if (!CoflSky.keyBindings[1].isKeyDown()) {
-            if ((System.currentTimeMillis() - LastClick) >= 300) {
+        if (!CoflSky.keyBindings[1].isPressed() && toggle) {
+            if ((System.currentTimeMillis() - LastClick) >= 150) {
 
                 FlipData f = WSCommandHandler.flipHandler.fds.GetHighestFlip();
 
@@ -111,10 +116,6 @@ public class EventRegistry {
 
                     CoflSky.Wrapper.SendMessage(new JsonStringCommand(CommandType.Clicked, command));
                     WSCommandHandler.Execute("/cofl track besthotkey " + f.Id, Minecraft.getMinecraft().thePlayer);
-                } else {
-                    // only display message once (if this is the key down event)
-                    if (CoflSky.keyBindings[1].isPressed())
-                        WSCommandHandler.Execute("/cofl dialog nobestflip", Minecraft.getMinecraft().thePlayer);
                 }
             }
         }
