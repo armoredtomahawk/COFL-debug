@@ -15,7 +15,7 @@ import de.torui.coflsky.proxy.APIKeyManager;
 import de.torui.coflsky.gui.tfm.ButtonRemapper;
 import de.torui.coflsky.gui.tfm.ChatMessageSendHandler;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+//import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.lwjgl.input.Keyboard;
 import de.torui.coflsky.network.WSClientWrapper;
 import net.minecraft.client.settings.KeyBinding;
