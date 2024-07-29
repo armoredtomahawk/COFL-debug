@@ -46,9 +46,8 @@ dependencies {
     minecraft("com.mojang:minecraft:1.8.9")
     mappings("de.oceanlabs.mcp:mcp_stable:22-1.8.9")
     forge("net.minecraftforge:forge:1.8.9-11.15.1.2318-1.8.9")
-
     annotationProcessor("org.spongepowered:mixin:0.8.4-SNAPSHOT")
-
+    implementation("com.google.code.gson:gson:2.8.9")
     shadowImpl("com.neovisionaries:nv-websocket-client:2.14")
 
     // If you don't want to log in with your real minecraft account, remove this line

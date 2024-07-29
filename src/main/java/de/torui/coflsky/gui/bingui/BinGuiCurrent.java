@@ -2,19 +2,27 @@ package de.torui.coflsky.gui.bingui;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import de.torui.coflsky.CoflSky;
+import de.torui.coflsky.WSCommandHandler;
+import de.torui.coflsky.commands.models.FlipData;
 import de.torui.coflsky.gui.GUIType;
 import de.torui.coflsky.gui.bingui.helper.ColorPallet;
 import de.torui.coflsky.gui.bingui.helper.RenderUtils;
+import de.torui.coflsky.handlers.*;
 import de.torui.coflsky.handlers.EventHandler;
 import de.torui.coflsky.handlers.EventRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiChest;
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.command.NumberInvalidException;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
@@ -37,11 +45,16 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static net.minecraft.init.Blocks.chest;
+
 public class BinGuiCurrent extends GuiChest {
     private long lastClickTime = 0;
-    private static final long MIN_DELAY = 89; // minimum delay in milliseconds
-    private static final long MAX_DELAY = 150; // maximum delay in milliseconds
-    private long currentDelay = 0;
+    long bedinittime;
+    private static final long MIN_DELAY = 90; // minimum delay in milliseconds
+    private static final long MAX_DELAY = 152; // maximum delay in milliseconds
+    private static final long MINBED_DELAY = 1219; // minimum delay in milliseconds
+    private static final long MAXBED_DELAY = 1502; // maximum delay in milliseconds
+    private long currentDelay = 100;
     private final Random random = new Random();
     private String message;
     private String[] lore;
@@ -53,10 +66,11 @@ public class BinGuiCurrent extends GuiChest {
     private boolean isRendered = false;
     private boolean isClosing = false;
     private boolean hasInitialMouseSet = false;
-
+    boolean bed = false;
+    //private long bedtime;
     // set if the auction was already bought
     private String buyer = null;
-
+    private long bedddelay;
     private static final Pattern CAN_BUY_IN_MATCHER = Pattern.compile("Can buy in: (.*)");
     private static final Pattern BUYER_MATCHER = Pattern.compile("Buyer: (.*)");
 
@@ -106,6 +120,7 @@ public class BinGuiCurrent extends GuiChest {
         IInventory inventory = ((ContainerChest) chest.inventorySlots).getLowerChestInventory();
         if (inventory == null) return;
 
+
         String guiName = inventory.getDisplayName().getUnformattedText().trim();
         if (guiName.equalsIgnoreCase("BIN Auction View") || guiName.equalsIgnoreCase("Confirm Purchase")) {
             this.chestGui = (GuiChest) event.gui;
@@ -152,6 +167,9 @@ public class BinGuiCurrent extends GuiChest {
             if (waitingForBed(chest)) {
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("[§1C§6oflnet§f]§7: §cBed is not purchasable yet."));
                 buyState = BuyState.INIT;
+                //bedtime = System.currentTimeMillis();
+                bedddelay = MIN_DELAY + random.nextInt((int) (MAXBED_DELAY - MINBED_DELAY));
+                bed = true;
             } else {
                 mc.playerController.windowClick(this.chestGui.inventorySlots.windowId, 31, 2, 3, mc.thePlayer);
                 wasMouseDown = false;
@@ -159,13 +177,18 @@ public class BinGuiCurrent extends GuiChest {
             }
         } else if (guiName.equalsIgnoreCase("Confirm Purchase") && buyState == BuyState.BUYING) {
             mc.playerController.windowClick(this.chestGui.inventorySlots.windowId, 11, 2, 3, mc.thePlayer);
+            //FlipData f = WSCommandHandler.flipHandler.fds.GetHighestFlip();
+            //JsonObject messagejson = new JsonParser().parse(("{" + f.getMessageAsString()) + "}").getAsJsonObject();
+            //double sellFor = messagejson.get("sellFor").getAsDouble();
             resetGUI();
+            //EventRegistry.flipBought();
         }
+
     }
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        if(isClosing){
+        if (isClosing) {
             return;
         }
         Mouse.setGrabbed(false);
@@ -176,96 +199,112 @@ public class BinGuiCurrent extends GuiChest {
 
         int width = mc.fontRendererObj.getStringWidth(message) > 500 ? mc.fontRendererObj.getStringWidth(message) + 5 : 500;
         int height = 300;
+        if (bed) {
+            RenderUtils.drawRoundedRect(screenWidth / 2, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 + 20, 60, 5, ColorPallet.SUCCESS.getColor());
+            if (!hasInitialMouseSet) {
+                Mouse.setCursorPosition(mc.displayWidth / 2, mc.displayHeight / 2);
+                hasInitialMouseSet = true;
+            }
 
-        //RenderUtils.drawRoundedRect(screenWidth / 2, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 + 20, 60, 5, ColorPallet.SUCCESS.getColor());
-        if (!hasInitialMouseSet) {
-            Mouse.setCursorPosition(mc.displayWidth / 2, mc.displayHeight / 2);
-            hasInitialMouseSet = true;
-        }
-
-        //if (lore.length > 25) {
-        //    height = 300 + (lore.length - 25) * 10;
-        //}
+            if (lore.length > 25) {
+                height = 300 + (lore.length - 25) * 10;
+            }
 
         //first i draw the main background
-        RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2, 10, width, height, 10, ColorPallet.PRIMARY.getColor());
 
-        //next i draw the title
-        RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5, 10 + 5, (width - 10), 14, 5, ColorPallet.SECONDARY.getColor());
-        RenderUtils.drawString(message, screenWidth / 2 - width / 2 + 7, 10 + 8, ColorPallet.WHITE.getColor());
+            RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2, 10, width, height, 10, ColorPallet.PRIMARY.getColor());
+            //next i draw the title
+            RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5, 10 + 5, (width - 10), 14, 5, ColorPallet.SECONDARY.getColor());
+            RenderUtils.drawString(message, screenWidth / 2 - width / 2 + 7, 10 + 8, ColorPallet.WHITE.getColor());
+            //now i draw the backround of the icon
+            RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5, 10 + 5 + 14 + 5, 20, 20, 5, ColorPallet.TERTIARY.getColor());
 
-        //now i draw the backround of the icon
-        RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5, 10 + 5 + 14 + 5, 20, 20, 5, ColorPallet.TERTIARY.getColor());
-
-        //now i draw the icon
-        if (itemStack == null) {
-            //draw a question mark in the icon
-            RenderUtils.drawString("?", screenWidth / 2 - width / 2 + 5 + 5, 10 + 5 + 14 + 5 + 2, ColorPallet.WHITE.getColor(), 40);
-        } else {
-            RenderUtils.drawItemStack(itemStack, screenWidth / 2 - width / 2 + 5 + 2, 10 + 5 + 14 + 5 + 2);
-        }
-
-
-        //draw the backorund for the lore
-        RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5 + 20 + 5, 10 + 5 + 14 + 5, (width - 10) - 25, (height - 100), 5, ColorPallet.SECONDARY.getColor());
-
-        //draw the lore, every line that is out of the lore background will not be drawn
-        int y = 10 + 5 + 14 + 5 + 2;
-        for (int i = 0; i < lore.length; i++) {
-            if (y + pixelsScrolled > 10 + 5 + 14 + 5 && y + pixelsScrolled < 10 + 5 + 14 + 5 + (height - 100)) {
-                RenderUtils.drawString(lore[i], screenWidth / 2 - width / 2 + 5 + 20 + 5 + 2, y + pixelsScrolled, ColorPallet.WHITE.getColor());
+            //now i draw the icon
+            if (itemStack == null) {
+                //draw a question mark in the icon
+                RenderUtils.drawString("?", screenWidth / 2 - width / 2 + 5 + 5, 10 + 5 + 14 + 5 + 2, ColorPallet.WHITE.getColor(), 40);
+            } else {
+                RenderUtils.drawItemStack(itemStack, screenWidth / 2 - width / 2 + 5 + 2, 10 + 5 + 14 + 5 + 2);
             }
-            y += 10;
-        }
 
 
-        //now i draw the buttons buy and sell under the lore
-        //cancel button
-        RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 - 25, 60, 5, ColorPallet.ERROR.getColor());
-        RenderUtils.drawString("Cancel", screenWidth / 2 - width / 2 + 5 + 5, 10 + 5 + 14 + 5 + (height - 100) + 5 + 5, ColorPallet.WHITE.getColor(), 40);
-        if (isMouseOverCancel(mouseX, mouseY, screenWidth, screenHeight, width, height)) {
-            RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 - 25, 60, 5, RenderUtils.setAlpha(ColorPallet.WHITE.getColor(), 100));
+            //draw the backorund for the lore
+            RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5 + 20 + 5, 10 + 5 + 14 + 5, (width - 10) - 25, (height - 100), 5, ColorPallet.SECONDARY.getColor());
+
+            //draw the lore, every line that is out of the lore background will not be drawn
+            int y = 10 + 5 + 14 + 5 + 2;
+            for (int i = 0; i < lore.length; i++) {
+                if (y + pixelsScrolled > 10 + 5 + 14 + 5 && y + pixelsScrolled < 10 + 5 + 14 + 5 + (height - 100)) {
+                    RenderUtils.drawString(lore[i], screenWidth / 2 - width / 2 + 5 + 20 + 5 + 2, y + pixelsScrolled, ColorPallet.WHITE.getColor());
+                }
+                y += 10;
+            }
+
+
+            //now i draw the buttons buy and sell under the lore
+            //cancel button
+            RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 - 25, 60, 5, ColorPallet.ERROR.getColor());
             RenderUtils.drawString("Cancel", screenWidth / 2 - width / 2 + 5 + 5, 10 + 5 + 14 + 5 + (height - 100) + 5 + 5, ColorPallet.WHITE.getColor(), 40);
-            if (isClicked()) {
-                //play a anvilsound
-                mc.thePlayer.playSound("random.anvil_land", 1, 1);
-                resetGUI();
+            if (isMouseOverCancel(mouseX, mouseY, screenWidth, screenHeight, width, height)) {
+                RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 - 25, 60, 5, RenderUtils.setAlpha(ColorPallet.WHITE.getColor(), 100));
+                RenderUtils.drawString("Cancel", screenWidth / 2 - width / 2 + 5 + 5, 10 + 5 + 14 + 5 + (height - 100) + 5 + 5, ColorPallet.WHITE.getColor(), 40);
+                if (isClicked()) {
+                    //play a anvilsound
+                    mc.thePlayer.playSound("random.anvil_land", 1, 1);
+                    resetGUI();
+                }
             }
-        }
 
-
-        //buy button
-        if (buyer == null) {
-            RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 + 20, 60, 5, ColorPallet.SUCCESS.getColor());
-            RenderUtils.drawString(buyText, screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 + 5 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5 + 5, ColorPallet.WHITE.getColor(), 40);
-        } else {
-            RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 + 20, 60, 5, ColorPallet.WARNING.getColor());
-            RenderUtils.drawString(getAlreadyBoughtText(buyer), screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 + 5 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5 + 5, ColorPallet.WHITE.getColor(), 40);
-        }
-        if (!isMouseOverCancel(mouseX, mouseY, screenWidth, screenHeight, width, height)) {
+            //buy button
             if (buyer == null) {
-                RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 + 20, 60, 5, RenderUtils.setAlpha(ColorPallet.WHITE.getColor(), 50));
+                RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 + 20, 60, 5, ColorPallet.SUCCESS.getColor());
                 RenderUtils.drawString(buyText, screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 + 5 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5 + 5, ColorPallet.WHITE.getColor(), 40);
+            } else {
+                RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 + 20, 60, 5, ColorPallet.WARNING.getColor());
+                RenderUtils.drawString(getAlreadyBoughtText(buyer), screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 + 5 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5 + 5, ColorPallet.WHITE.getColor(), 40);
             }
+        }
+        if (EventRegistry.toggle) {
+            //if (buyer == null) {
+            //RenderUtils.drawRoundedRect(screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5, (width - 10) / 2 + 20, 60, 5, RenderUtils.setAlpha(ColorPallet.WHITE.getColor(), 50));
+            //RenderUtils.drawString(buyText, screenWidth / 2 - width / 2 + 5 + (width - 10) / 2 + 5 - 20, 10 + 5 + 14 + 5 + (height - 100) + 5 + 5, ColorPallet.WHITE.getColor(), 40);
+            //}
             if (EventRegistry.toggle && buyer == null) {
                 long currentTime = System.currentTimeMillis();
                 if (currentTime - lastClickTime > currentDelay) {
-                    if (buyState == BuyState.INIT) {
+                    if (buyState == BuyState.INIT && !bed) {
                         // play a sound
                         mc.thePlayer.playSound("random.click", 1, 1);
-                        //buyText = "Click again to confirm";
-                        //buyState = BuyState.PURCHASE;
-                    } else if (buyState == BuyState.CONFIRM) {
+                        buyText = "ATTEMPTING TO BUY";
+                        buyState = BuyState.PURCHASE;
+                        lastClickTime = currentTime;
+                        currentDelay = MIN_DELAY + random.nextInt((int) (MAX_DELAY - MIN_DELAY));
+                        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("Buy Init Command Sent"));
+                        bedinittime = System.currentTimeMillis();
+
+                    } else if (buyState == BuyState.CONFIRM && currentTime - lastClickTime > currentDelay) {
                         mc.thePlayer.playSound("random.click", 1, 1);
                         //buyText = "Buying";
-                        //buyState = BuyState.BUYING;
+                        buyState = BuyState.BUYING;
+                        lastClickTime = currentTime;
+                        currentDelay = MIN_DELAY + random.nextInt((int) (MAX_DELAY - MIN_DELAY));
+                        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("Buy Confirm"));
+                        bedinittime = System.currentTimeMillis();
+                    } else if (bed && currentTime - bedinittime > bedddelay && currentTime - lastClickTime > currentDelay) {
+                        // play a sound
+                        mc.thePlayer.playSound("random.click", 1, 1);
+                        buyText = "BED ACTIVE";
+                        buyState = BuyState.PURCHASE;
+                        lastClickTime = currentTime;
+                        currentDelay = MIN_DELAY + random.nextInt((int) (MAX_DELAY - MIN_DELAY));
+                        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("Buy Bed In Progress"));
+                    } else if (!bed && currentTime - bedinittime > 600 && currentTime - lastClickTime > currentDelay){
+                        resetGUI();
+                        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("Buy Not Responding - Retrying"));
                     }
-                    lastClickTime = currentTime;
-                    currentDelay = MIN_DELAY + random.nextInt((int) (MAX_DELAY - MIN_DELAY));
                 }
             }
         }
-
     }
 
     public String getAlreadyBoughtText(String buyer) {
@@ -354,6 +393,7 @@ public class BinGuiCurrent extends GuiChest {
         ) {
             //close the gui
             resetGUI();
+            //CoflSky.FlipHandler(message);
         }
     }
 
@@ -365,11 +405,13 @@ public class BinGuiCurrent extends GuiChest {
     public boolean waitingForBed(GuiChest currentScreen) {
         ItemStack bedStack = getItem(31, currentScreen);
         if (bedStack == null || !bedStack.getItem().equals(Item.getByNameOrId("minecraft:bed"))) {
+            bed = false;
             return false;
         }
 
         ItemStack itemStack = getItem(13, currentScreen);
         if (itemStack == null) {
+            bed = false;
             return false;
         }
         List<String> itemTooltip = itemStack.getTooltip(Minecraft.getMinecraft().thePlayer, false);
@@ -380,9 +422,12 @@ public class BinGuiCurrent extends GuiChest {
             }
             String timeData = matcher.group(1);
             if (timeData.equals("Soon!")) {
+                bed = true;
+                //bedtime = System.currentTimeMillis();
                 return true;
             }
         }
+        bed = false;
         return false;
     }
 

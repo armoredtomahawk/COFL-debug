@@ -1,12 +1,15 @@
 package de.torui.coflsky.handlers;
 
+import com.google.gson.JsonObject;
 import de.torui.coflsky.Config;
 import de.torui.coflsky.network.QueryServerCommands;
 import de.torui.coflsky.network.WSClient;
 import de.torui.coflsky.utils.ReflectionUtil;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.inventory.GuiChest;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.inventory.ContainerChest;
 import net.minecraft.inventory.IInventory;
@@ -15,6 +18,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompressedStreamTools;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -26,6 +30,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+
+import static de.torui.coflsky.gui.bingui.helper.RenderUtils.mc;
 
 public class DescriptionHandler {
 
@@ -87,6 +93,7 @@ public class DescriptionHandler {
 
     private DescModification[] getTooltipData(ItemStack itemStack) {
         String id = ExtractIdFromItemStack(itemStack);
+
         if (tooltipItemIdMap.containsKey(id)) {
             return tooltipItemIdMap.getOrDefault(id, EMPTY_ARRAY);
         }
@@ -263,6 +270,9 @@ public class DescriptionHandler {
         GuiContainer containerGui = (GuiContainer) event.gui;
         for (Slot inventorySlot : containerGui.inventorySlots.inventorySlots) {
             if (!inventorySlot.getHasStack()) continue;
+            //String slotnum = String.valueOf(inventorySlot.slotNumber);
+            //JsonObject displaynamejson = new JsonObject inventorySlot.inventory.getDisplayName());
+            //Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(invmsg));
             DescModification[] tooltipData = getTooltipData(inventorySlot.getStack());
             for (DescModification modification : tooltipData) {
                 if ("HIGHLIGHT".equals(modification.type)) {
@@ -281,6 +291,13 @@ public class DescriptionHandler {
                         throw new RuntimeException(e);
                     }
                 }
+                //int slotIndex = inventorySlot.slotNumber;
+                //Slot slot = ((GuiInventory) event.gui).inventorySlots.getSlot(slotIndex);
+
+                //if (slot != null) {
+                   // String itemName = slot.getStack() != null ? slot.getStack().getDisplayName() : "Empty";
+                   // mc.thePlayer.addChatMessage(new ChatComponentText("Slot: " + slotIndex + ", Item: " + itemName));
+                //}
             }
         }
     }
